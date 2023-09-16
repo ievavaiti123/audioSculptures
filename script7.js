@@ -1,7 +1,9 @@
 // https://github.com/bentoBAUX/Rhythm-of-Three_Threejs/blob/main/index.html
 
 let noise = new SimplexNoise();
-let audio = new Audio("./audio/Yushh - Look Mum No Hands.mp3"); 
+// let audio = document.getElementById('audio');
+
+
 
 
 startViz();
@@ -24,36 +26,65 @@ function startViz() {
     document.getElementById("sketch-container").appendChild( renderer.domElement );
 
 
-    //play function
-    const playPauseButton = document.getElementById('playPauseButton');
+const audioListener = new THREE.AudioListener();
+camera.add( audioListener );
+const audioLoader = new THREE.AudioLoader();
+const audio = new THREE.Audio(audioListener);
+audioLoader.load('https://cdn.glitch.global/4c75b1b0-7fb8-4f94-a4f8-5790a11582f7/Yushh%20-%20Look%20Mum%20No%20Hands%20-%2001%20Look%20Mum%20No%20Hands.mp3?v=1694877600875', (buffer) => {
+    audio.setBuffer(buffer);
+});
 
-    playPauseButton.addEventListener('click', () => {
+// Create a button element reference
+const playPauseButton = document.getElementById('playPauseButton');
 
-        if (isPlaying(audio)) {
-            console.log("Pause");
-            audio.pause();
-            playPauseButton.textContent = "Play";
-        } else {
-            console.log("Play");
-            audio.play();
-            playPauseButton.textContent = "Pause";
-        }
-    });
-
-    function isPlaying(audioIn) {
-        return !audioIn.paused;
+// Handle button click to start audio playback
+playPauseButton.addEventListener('click', () => {
+    if (audio.isPlaying) {
+        audio.pause();
+        playPauseButton.textContent = 'Play Audio';
+    } else {
+        audio.play();
+        playPauseButton.textContent = 'Pause Audio';
     }
+});
+//     //play function
+//     const playPauseButton = document.getElementById('playPauseButton');
+
+//     playPauseButton.addEventListener('click', () => {
+
+//         if (isPlaying(audio)) {
+//             console.log("Pause");
+//             audio.pause();
+//             playPauseButton.textContent = "Play";
+//         } else {
+//             console.log("Play");
+//             audio.play();
+//             playPauseButton.textContent = "Pause";
+//         }
+//     });
+
+//     function isPlaying(audioIn) {
+//         return !audioIn.paused;
+//     }
+
 
     //analyser
-    let context = new AudioContext();
-    let src = context.createMediaElementSource(audio);
-    let analyser = context.createAnalyser();
-    src.connect(analyser);
-    analyser.connect(context.destination);
-    analyser.fftSize = 512;
-    let bufferLength = analyser.frequencyBinCount;
-    let dataArray = new Uint8Array(bufferLength);
+    
+    // let context = new AudioContext();
+    // let src = context.createMediaElementSource(audio);
+    // let analyser = context.createAnalyser();
+    // src.connect(analyser);
+    // analyser.connect(context.destination);
+    // analyser.fftSize = 512;
+    // let bufferLength = analyser.frequencyBinCount;
+    // let dataArray = new Uint8Array(bufferLength);
 
+    let analyser = new THREE.AudioAnalyser( audio, 512 );
+    console.log(analyser)
+    let bufferLength = analyser.frequencyBinCount;
+    let dataArray = analyser.data;
+  console.log(dataArray)
+  
     // AMBIENT LIGHT
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     // DIRECTIONAL LIGHT
@@ -155,7 +186,7 @@ function startViz() {
     });
 
     function render() {
-        analyser.getByteFrequencyData(dataArray);
+        analyser.getFrequencyData(dataArray);
 
         let lowerHalfArray = dataArray.slice(0, (dataArray.length / 2) - 1);
         let upperHalfArray = dataArray.slice((dataArray.length / 2) - 1, dataArray.length - 1);
