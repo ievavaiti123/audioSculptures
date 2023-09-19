@@ -1,10 +1,15 @@
-// https://github.com/bentoBAUX/Rhythm-of-Three_Threejs/blob/main/index.html
+// ref: https://github.com/bentoBAUX/Rhythm-of-Three_Threejs/blob/main/index.html
+
+
+
+import * as THREE from 'three';
+
+import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
 
 let noise = new SimplexNoise();
-// let audio = document.getElementById('audio');
 
 
-
+const exporter = new OBJExporter();
 
 startViz();
 
@@ -37,47 +42,30 @@ audioLoader.load('https://cdn.glitch.global/4c75b1b0-7fb8-4f94-a4f8-5790a11582f7
 // Create a button element reference
 const playPauseButton = document.getElementById('playPauseButton');
 
+const downloadButton = document.getElementById('downloadButton');
+
 // Handle button click to start audio playback
 playPauseButton.addEventListener('click', () => {
     if (audio.isPlaying) {
         audio.pause();
         playPauseButton.textContent = 'Play Audio';
+        console.log(ball);
+        // console.log(ball.geometry.vertices)
+
+
+       
     } else {
         audio.play();
         playPauseButton.textContent = 'Pause Audio';
     }
 });
-//     //play function
-//     const playPauseButton = document.getElementById('playPauseButton');
 
-//     playPauseButton.addEventListener('click', () => {
-
-//         if (isPlaying(audio)) {
-//             console.log("Pause");
-//             audio.pause();
-//             playPauseButton.textContent = "Play";
-//         } else {
-//             console.log("Play");
-//             audio.play();
-//             playPauseButton.textContent = "Pause";
-//         }
-//     });
-
-//     function isPlaying(audioIn) {
-//         return !audioIn.paused;
-//     }
+downloadButton.addEventListener('click', () => {
+        const myObj = exporter.parse( scene );
+        downloadFile('shape.obj', myObj);
+});
 
 
-    //analyser
-    
-    // let context = new AudioContext();
-    // let src = context.createMediaElementSource(audio);
-    // let analyser = context.createAnalyser();
-    // src.connect(analyser);
-    // analyser.connect(context.destination);
-    // analyser.fftSize = 512;
-    // let bufferLength = analyser.frequencyBinCount;
-    // let dataArray = new Uint8Array(bufferLength);
 
     let analyser = new THREE.AudioAnalyser( audio, 512 );
     console.log(analyser)
@@ -88,7 +76,7 @@ playPauseButton.addEventListener('click', () => {
     // AMBIENT LIGHT
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     // DIRECTIONAL LIGHT
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0)
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.5)
     dirLight.position.x += 20
     dirLight.position.y += 20
     dirLight.position.z += 20
@@ -121,49 +109,7 @@ playPauseButton.addEventListener('click', () => {
 
 
     let geometry = new THREE.SphereGeometry(30, 50, 50);
-    // geometry.positionData = [];
-    // let v3 = new THREE.Vector3();
-    // for (let i = 0; i < geometry.attributes.position.count; i++){
-    //     v3.fromBufferAttribute(geometry.attributes.position, i);
-    //     geometry.positionData.push(v3.clone());
-    // }
-    //let wireframe = new THREE.EdgesGeometry(geometry);
-    //let material = new THREE.MeshLambertMaterial({ color: 0x383838, wireframe: true });
 
-
-
-    let material = new THREE.ShaderMaterial({
-        uniforms: {
-            color1: {
-                value: new THREE.Color("#fff1eb")
-            },
-            color2: {
-                value: new THREE.Color("#3d3d3d")
-            }
-        },
-        vertexShader: `
-          letying vec2 vUv;
-      
-          void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
-          }
-        `,
-        fragmentShader: `
-          uniform vec3 color1;
-          uniform vec3 color2;
-          
-          letying vec2 vUv;
-          
-          void main() {
-            gl_FragColor = vec4(mix(color1, color2, vUv.y), 1.0);
-          }
-        `,
-        //wireframe: true
-    });
-
-    // let ambientLight = new THREE.AmbientLight(0xffffff);
-    // //scene.add(ambientLight);
 
     let ball = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
         map: waterBaseColor,
@@ -206,8 +152,11 @@ playPauseButton.addEventListener('click', () => {
         ball.rotation.y += 0.005;
         ball.rotation.z += 0.002;
 
-
-        WarpBall(ball, modulate(Math.pow(lowerMaxFr, 0.8), 0, 1, 0, 8), modulate(upperAvgFr, 0, 1, 0, 4));
+        if (audio.isPlaying) {
+            console.log("yes");
+            WarpBall(ball, modulate(Math.pow(lowerMaxFr, 0.8), 0, 1, 0, 8), modulate(upperAvgFr, 0, 1, 0, 4));
+        }
+        
 
 
         requestAnimationFrame(render);
@@ -252,3 +201,24 @@ function avg(arr) {
 function max(arr) {
     return arr.reduce(function (a, b) { return Math.max(a, b); })
 }
+
+function downloadFile(filename, content) {
+    const blob = new Blob([content], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    
+    // Trigger a click event to initiate the download
+    const event = new MouseEvent('click', {
+      view: window,
+      bubbles: true,
+      cancelable: true
+    });
+    
+    a.dispatchEvent(event);
+    
+    // Clean up resources
+    URL.revokeObjectURL(url);
+  }
