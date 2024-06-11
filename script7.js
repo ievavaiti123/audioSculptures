@@ -1,5 +1,5 @@
 // ref: https://github.com/bentoBAUX/Rhythm-of-Three_Threejs/blob/main/index.html
-
+//https://www.youtube.com/watch?v=n3rkF0el0AQ&t=13s
 
 
 import * as THREE from 'three';
@@ -35,7 +35,7 @@ const audioListener = new THREE.AudioListener();
 camera.add( audioListener );
 const audioLoader = new THREE.AudioLoader();
 const audio = new THREE.Audio(audioListener);
-audioLoader.load('https://cdn.glitch.global/4c75b1b0-7fb8-4f94-a4f8-5790a11582f7/Yushh%20-%20Look%20Mum%20No%20Hands%20-%2001%20Look%20Mum%20No%20Hands.mp3?v=1694877600875', (buffer) => {
+audioLoader.load('audio/Demo_beat.mp3', (buffer) => {
     audio.setBuffer(buffer);
 });
 
@@ -108,7 +108,7 @@ downloadButton.addEventListener('click', () => {
     const waterAmbientOcclusion = textureLoader.load("./textures/Water_002_OCC.jpg");
 
 
-    let geometry = new THREE.SphereGeometry(30, 50, 50);
+    let geometry = new THREE.SphereGeometry(20, 100, 100);
 
 
     let ball = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
@@ -154,7 +154,7 @@ downloadButton.addEventListener('click', () => {
 
         if (audio.isPlaying) {
             console.log("yes");
-            WarpBall(ball, modulate(Math.pow(lowerMaxFr, 0.8), 0, 1, 0, 8), modulate(upperAvgFr, 0, 1, 0, 4));
+            WarpBall(ball, modulate(Math.pow(lowerMaxFr, 0.8), 0, 1, 0, 1), modulate(upperAvgFr, 0, 1, 0, 4));
         }
         
 
