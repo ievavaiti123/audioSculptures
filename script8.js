@@ -14,7 +14,14 @@ const exporter = new OBJExporter();
 
 let renderer, scene, camera, controls;
 
-let analyser, dataArray, audio;
+let analyser, dataArray, audio, sampleRate, binFrequency;
+
+const fftSize = 512;
+
+const minFrequency = 200;
+const maxFrequency = 400;
+
+let startIndex, endIndex;
 
 let ball, cube;
 
@@ -55,11 +62,20 @@ function setup() {
     audioLoader.load('audio/granular-soundscape-2.wav', (buffer) => {
     audio.setBuffer(buffer);
     });
-    analyser = new THREE.AudioAnalyser( audio, 512 );
+    analyser = new THREE.AudioAnalyser( audio, fftSize );
     console.log(analyser)
     let bufferLength = analyser.frequencyBinCount;
     dataArray = analyser.data;
     console.log(dataArray)
+
+    sampleRate = audio.context.sampleRate
+
+    binFrequency = sampleRate / fftSize;
+
+    startIndex = Math.floor(minFrequency / binFrequency);
+    endIndex = Math.ceil(maxFrequency / binFrequency);
+
+    console.log(`Start Index: ${startIndex}, End Index: ${endIndex}`);
   
     // AMBIENT LIGHT
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
@@ -95,7 +111,7 @@ function setup() {
 //     //console.log()
 //    scene.add(group);
 
-    let cubegeometry = new THREE.BoxGeometry(20, 20, 2, 20, 20, 50);
+    let cubegeometry = new THREE.BoxGeometry(50, 50, 2, 50, 50, 50);
     let cubemesh = new THREE.MeshStandardMaterial();
     cube = new THREE.Mesh(cubegeometry, cubemesh);
     //cube.receiveShadow = true;
@@ -128,7 +144,7 @@ function gui() {
             audio.pause();
             playPauseButton.textContent = 'Play Audio';
             //console.log(cube);
-            // console.log(ball.geometry.vertices)
+            console.log(cube.geometry.vertices)
         } else {
             audio.play();
             playPauseButton.textContent = 'Pause Audio';
@@ -148,6 +164,8 @@ function render() {
     renderer.render(scene, camera);
     
     analyser.getFrequencyData(dataArray);
+
+    const slicedDataArray = dataArray.slice(startIndex, endIndex);
 
     let lowerHalfArray = dataArray.slice(0, (dataArray.length / 2) - 1);
     let upperHalfArray = dataArray.slice((dataArray.length / 2) - 1, dataArray.length - 1);
@@ -170,7 +188,8 @@ function render() {
     if (audio.isPlaying) {
         console.log("yes");
         // WarpBall(ball, modulate(Math.pow(lowerAvgFr, 0.8), 0, 1, 0, 1), modulate(upperAvgFr, 0, 1, 0, 4));
-        WarpBox(cube, modulate(Math.pow(lowerAvgFr, 0.8), 0, 1, 0, 1), modulate(upperAvgFr, 0, 1, 0, 4));
+        // WarpBox(cube, modulate(Math.pow(lowerAvgFr, 0.8), 0, 1, 0, 1), modulate(upperAvgFr, 0, 1, 0, 4));
+        WarpBox(cube, slicedDataArray)
     }
     
  
@@ -192,7 +211,7 @@ function WarpBall(mesh, bassFr, treFr) {
     mesh.geometry.computeFaceNormals();
 }
 
-function WarpBox(mesh_, bassFr, treFr) {
+function WarpBox2(mesh_, bassFr, treFr) {
     mesh_.geometry.vertices.forEach(function (vertex, i) {
         let originalVertex = mesh_.geometry.verticesOriginal[i]; 
        // console.log(originalVertex)
@@ -216,6 +235,37 @@ function WarpBox(mesh_, bassFr, treFr) {
     mesh_.geometry.normalsNeedUpdate = true;
     mesh_.geometry.computeVertexNormals();
     mesh_.geometry.computeFaceNormals();
+}
+
+
+
+const amplificationFactor = 15;
+
+function WarpBox(mesh_, audioData) {
+    mesh_.geometry.vertices.forEach(function (vertex, i) {
+        let originalVertex = mesh_.geometry.verticesOriginal[i]; 
+        if (vertex.z > 0) { 
+            // Normalize the frequency data to a value between 0 and 1
+            let frequencyValue = audioData[i % audioData.length] / 511.0;
+
+            let amplifiedValue = frequencyValue * amplificationFactor;
+
+            // Apply the displacement to the z coordinate directly
+            vertex.copy(originalVertex);
+            vertex.z += amplifiedValue;
+        }
+    });
+    //averageVertices(mesh_);
+
+    // Notify Three.js of the updated vertices and normals
+    mesh_.geometry.verticesNeedUpdate = true;
+    mesh_.geometry.normalsNeedUpdate = true;
+    mesh_.geometry.computeVertexNormals();
+    mesh_.geometry.computeFaceNormals();
+}
+
+function map(value, inMin, inMax, outMin, outMax) {
+    return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
 }
 
 function averageVertices(mesh) {
@@ -248,6 +298,8 @@ function averageVertices(mesh) {
     mesh.geometry.computeVertexNormals();
     mesh.geometry.computeFaceNormals();
 }
+
+
 
 function getNeighborIndices(mesh, vertexIndex) {
     let neighbors = new Set();
