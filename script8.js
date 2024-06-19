@@ -27,7 +27,7 @@ let startIndex, endIndex;
 
 let datGui, params;
 
-let ball, cube;
+let sphere, cube, previousVertices;
 
 
 
@@ -120,13 +120,23 @@ function setup() {
 //     //console.log()
 //    scene.add(group);
 
-    let cubegeometry = new THREE.BoxGeometry(50, 50, 2, 5, 50, 5);
-    let cubemesh = new THREE.MeshStandardMaterial();
-    cube = new THREE.Mesh(cubegeometry, cubemesh);
-    cubegeometry.verticesOriginal = cubegeometry.vertices.map(vertex => vertex.clone());
+    // let cubegeometry = new THREE.BoxGeometry(50, 50, 2, 5, 50, 5);
+    // let cubemesh = new THREE.MeshStandardMaterial();
+    // cube = new THREE.Mesh(cubegeometry, cubemesh);
+    // cubegeometry.verticesOriginal = cubegeometry.vertices.map(vertex => vertex.clone());
+    // scene.add(cube);
 
-    scene.add(cube);
+    let sphereGeometry = new THREE.SphereGeometry(25, 70, 200); // Adjust the radius and segment count as needed
+    let sphereMaterial = new THREE.MeshStandardMaterial();
+    sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    sphereGeometry.verticesOriginal = sphereGeometry.vertices.map(vertex => vertex.clone());
 
+    previousVertices = sphereGeometry.vertices.map(vertex => vertex.clone());
+
+    sphere.receiveShadow = true;
+    sphere.castShadow = true;
+
+    scene.add(sphere);
 
 
     //setup window resize
@@ -183,6 +193,8 @@ function render() {
 
     const slicedDataArray = dataArray.slice(startIndex, endIndex);
 
+    const smoothingFactor = 0.5; 
+    const smoothedDataArray = smoothAudioData(slicedDataArray, smoothingFactor);
 
     // cube.rotation.x += 0.001;
     // ball.rotation.y += 0.005;
@@ -192,52 +204,20 @@ function render() {
         //console.log("yes");
         // WarpBall(ball, modulate(Math.pow(lowerAvgFr, 0.8), 0, 1, 0, 1), modulate(upperAvgFr, 0, 1, 0, 4));
         // WarpBox(cube, modulate(Math.pow(lowerAvgFr, 0.8), 0, 1, 0, 1), modulate(upperAvgFr, 0, 1, 0, 4));
-        WarpBox(cube, slicedDataArray)
+        //WarpBox(cube, slicedDataArray)
+        WarpSphere(sphere, smoothedDataArray)
     }
     
  
 };
 
-function WarpBall(mesh, bassFr, treFr) {
-    mesh.geometry.vertices.forEach(function (vertex, i) {
-        let offset = mesh.geometry.parameters.radius;
-        let amp = 5;
-        let time = window.performance.now();
-        vertex.normalize();
-        let rf = 0.00001;
-        let distance = (offset + bassFr) + noise.noise3D(vertex.x + time * rf * 6, vertex.y + time * rf * 7, vertex.z + time * rf * 8) * amp * treFr;
-        vertex.multiplyScalar(distance);
-    });
-    mesh.geometry.verticesNeedUpdate = true;
-    mesh.geometry.normalsNeedUpdate = true;
-    mesh.geometry.computeVertexNormals();
-    mesh.geometry.computeFaceNormals();
-}
-
-function WarpBox2(mesh_, bassFr, treFr) {
-    mesh_.geometry.vertices.forEach(function (vertex, i) {
-        let originalVertex = mesh_.geometry.verticesOriginal[i]; 
-       // console.log(originalVertex)
-            if (vertex.z > 0) { 
-            let offset = 3;  // Half of the box size
-            let amp = 2;
-            let time = window.performance.now();
-            let rf = 0.0001;
-            let displacement = noise.noise3D(vertex.x + time * rf * 6, vertex.y + time * rf * 7, vertex.z + time * rf * 8) * amp * treFr;
-            
-            // Apply the displacement to the z coordinate directly
-            vertex.copy(originalVertex);
-            vertex.z += displacement + bassFr;
-        }
-    });
-
-    //averageVertices(mesh_);
-    
-    // Notify Three.js of the updated vertices and normals
-    mesh_.geometry.verticesNeedUpdate = true;
-    mesh_.geometry.normalsNeedUpdate = true;
-    mesh_.geometry.computeVertexNormals();
-    mesh_.geometry.computeFaceNormals();
+function smoothAudioData(audioData, smoothingFactor) {
+    let smoothedData = new Float32Array(audioData.length);
+    smoothedData[0] = audioData[0];
+    for (let i = 1; i < audioData.length; i++) {
+        smoothedData[i] = smoothingFactor * audioData[i] + (1 - smoothingFactor) * smoothedData[i - 1];
+    }
+    return smoothedData;
 }
 
 function updateGeometry() {
@@ -250,6 +230,48 @@ function updateGeometry() {
     scene.add(cube);
 }
 
+
+
+function WarpSphere(mesh_, audioData) {
+    const numVertices = mesh_.geometry.vertices.length;
+    const smoothingFactor = 0.5; 
+
+    let stepSize = 5
+    // Step 1: Affect every 5th vertex
+    for (let i = 0; i < numVertices; i += stepSize) {
+        let originalVertex = mesh_.geometry.verticesOriginal[i];
+        
+        // Normalize the frequency data to a value between 0 and 1
+        let frequencyValue = audioData[(i / stepSize) % audioData.length] / fftSize;
+        let amplifiedValue = frequencyValue * amplificationFactor;
+
+        // Calculate the normal direction and apply the displacement
+        let normal = originalVertex.clone().normalize();
+        let displacement = normal.multiplyScalar(amplifiedValue);
+
+        // Update the vertex position
+        mesh_.geometry.vertices[i].copy(originalVertex).add(displacement);
+        previousVertices[i].copy(mesh_.geometry.vertices[i]);
+    }
+
+    // Step 2: Smooth the vertices between the affected ones
+    for (let i = 0; i < numVertices; i++) {
+        if (i % stepSize !== 0) {
+            let leftIndex = Math.floor(i / stepSize) * stepSize;
+            let rightIndex = Math.min(leftIndex + stepSize, numVertices - 1);
+
+            let leftVertex = previousVertices[leftIndex];
+            let rightVertex = previousVertices[rightIndex];
+
+            // Interpolate between the left and right affected vertices
+            let t = (i % stepSize) / stepSize;
+            let interpolatedVertex = leftVertex.clone().lerp(rightVertex, t);
+
+            mesh_.geometry.vertices[i].lerp(interpolatedVertex, smoothingFactor);
+        }
+    }
+    mesh_.geometry.verticesNeedUpdate = true;
+}
 
 
 function WarpBox(mesh_, audioData) {
