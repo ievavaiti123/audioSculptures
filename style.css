@@ -11,7 +11,7 @@ body {
 
 #gui-container {
     position: absolute;
-    top: 0%;
+    top: 80%;
     left: 50%;
     
     z-index: 100;
@@ -41,9 +41,9 @@ body {
     
     background-color: rgba(0, 0, 0, 0.8);
     /* border: solid 1px #000000; */
-    -ms-transform: translateX(-100%);
+    /* -ms-transform: translateX(-100%); */
     transform: translateX(-100%);
-    
+   
     border-radius: 10px;
     margin-right: 5px;
     color: white;

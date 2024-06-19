@@ -16,14 +16,22 @@ let renderer, scene, camera, controls;
 
 let analyser, dataArray, audio, sampleRate, binFrequency;
 
-const fftSize = 512;
+const amplificationFactor = 15;
 
-const minFrequency = 200;
-const maxFrequency = 400;
+const fftSize = 1024;
+
+const minFrequency = 3000;
+const maxFrequency = 10000;
 
 let startIndex, endIndex;
 
+let datGui, params;
+
 let ball, cube;
+
+
+
+
 
 setup();
 gui();
@@ -61,6 +69,7 @@ function setup() {
     audio = new THREE.Audio(audioListener);
     audioLoader.load('audio/granular-soundscape-2.wav', (buffer) => {
     audio.setBuffer(buffer);
+    audio.loop = true;
     });
     analyser = new THREE.AudioAnalyser( audio, fftSize );
     console.log(analyser)
@@ -68,10 +77,10 @@ function setup() {
     dataArray = analyser.data;
     console.log(dataArray)
 
+    //data filtering
     sampleRate = audio.context.sampleRate
-
     binFrequency = sampleRate / fftSize;
-
+    //crete frequency range
     startIndex = Math.floor(minFrequency / binFrequency);
     endIndex = Math.ceil(maxFrequency / binFrequency);
 
@@ -111,19 +120,14 @@ function setup() {
 //     //console.log()
 //    scene.add(group);
 
-    let cubegeometry = new THREE.BoxGeometry(50, 50, 2, 50, 50, 50);
+    let cubegeometry = new THREE.BoxGeometry(50, 50, 2, 5, 50, 5);
     let cubemesh = new THREE.MeshStandardMaterial();
     cube = new THREE.Mesh(cubegeometry, cubemesh);
-    //cube.receiveShadow = true;
-   // cube.castShadow = true;
-   //console.log(cube.geometry.vertices)
-    group.add(cube);
-
     cubegeometry.verticesOriginal = cubegeometry.vertices.map(vertex => vertex.clone());
 
-    //console.log(cube.geometry.verticesOriginal)
+    scene.add(cube);
 
-    scene.add(group);
+
 
     //setup window resize
     window.addEventListener('resize', () => {
@@ -154,6 +158,18 @@ function gui() {
             const myObj = exporter.parse( scene );
             downloadFile('shape.obj', myObj);
     });
+
+    let datGui = new dat.GUI();
+        params = {
+            widthSegments: 5,
+            heightSegments: 50,
+            depthSegments: 5,
+        };
+
+    datGui.add(params, 'widthSegments', 1, 50).step(1).onChange(updateGeometry);
+    datGui.add(params, 'heightSegments', 1, 50).step(1).onChange(updateGeometry);
+    datGui.add(params, 'depthSegments', 1, 50).step(1).onChange(updateGeometry);
+    
 }
 
 
@@ -167,26 +183,13 @@ function render() {
 
     const slicedDataArray = dataArray.slice(startIndex, endIndex);
 
-    let lowerHalfArray = dataArray.slice(0, (dataArray.length / 2) - 1);
-    let upperHalfArray = dataArray.slice((dataArray.length / 2) - 1, dataArray.length - 1);
-
-    let overallAvg = avg(dataArray);
-    let lowerMax = max(lowerHalfArray);
-    let lowerAvg = avg(lowerHalfArray);
-    let upperMax = max(upperHalfArray);
-    let upperAvg = avg(upperHalfArray);
-
-    let lowerMaxFr = lowerMax / lowerHalfArray.length;
-    let lowerAvgFr = lowerAvg / lowerHalfArray.length;
-    let upperMaxFr = upperMax / upperHalfArray.length;
-    let upperAvgFr = upperAvg / upperHalfArray.length;
 
     // cube.rotation.x += 0.001;
     // ball.rotation.y += 0.005;
     // ball.rotation.z += 0.002;
 
     if (audio.isPlaying) {
-        console.log("yes");
+        //console.log("yes");
         // WarpBall(ball, modulate(Math.pow(lowerAvgFr, 0.8), 0, 1, 0, 1), modulate(upperAvgFr, 0, 1, 0, 4));
         // WarpBox(cube, modulate(Math.pow(lowerAvgFr, 0.8), 0, 1, 0, 1), modulate(upperAvgFr, 0, 1, 0, 4));
         WarpBox(cube, slicedDataArray)
@@ -237,9 +240,17 @@ function WarpBox2(mesh_, bassFr, treFr) {
     mesh_.geometry.computeFaceNormals();
 }
 
+function updateGeometry() {
+    scene.remove(cube);
+    let cubegeometry = new THREE.BoxGeometry(50, 50, 2, params.widthSegments, params.heightSegments, params.depthSegments);
+    let cubemesh = new THREE.MeshStandardMaterial();
+    cube = new THREE.Mesh(cubegeometry, cubemesh);
+    
+    cubegeometry.verticesOriginal = cubegeometry.vertices.map(vertex => vertex.clone());
+    scene.add(cube);
+}
 
 
-const amplificationFactor = 15;
 
 function WarpBox(mesh_, audioData) {
     mesh_.geometry.vertices.forEach(function (vertex, i) {
