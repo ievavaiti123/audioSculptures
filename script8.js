@@ -111,32 +111,24 @@ function setup() {
     scene.add(dirLight);
 
     //setup shape   
-//     let geometry = new THREE.SphereGeometry(20, 100, 100);
-//     let mesh = new THREE.MeshStandardMaterial();
-//     ball = new THREE.Mesh(geometry, mesh);
-//     ball.receiveShadow = true;
-//     ball.castShadow = true;
-//     group.add(ball);
-//     //console.log()
-//    scene.add(group);
 
-    // let cubegeometry = new THREE.BoxGeometry(50, 50, 2, 5, 50, 5);
-    // let cubemesh = new THREE.MeshStandardMaterial();
-    // cube = new THREE.Mesh(cubegeometry, cubemesh);
-    // cubegeometry.verticesOriginal = cubegeometry.vertices.map(vertex => vertex.clone());
-    // scene.add(cube);
+    let cubegeometry = new THREE.BoxGeometry(50, 50, 2, 5, 50, 5);
+    let cubemesh = new THREE.MeshStandardMaterial();
+    cube = new THREE.Mesh(cubegeometry, cubemesh);
+    cubegeometry.verticesOriginal = cubegeometry.vertices.map(vertex => vertex.clone());
+    scene.add(cube);
 
-    let sphereGeometry = new THREE.SphereGeometry(25, 70, 200); // Adjust the radius and segment count as needed
-    let sphereMaterial = new THREE.MeshStandardMaterial();
-    sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-    sphereGeometry.verticesOriginal = sphereGeometry.vertices.map(vertex => vertex.clone());
+    // let sphereGeometry = new THREE.SphereGeometry(25, 70, 200); // Adjust the radius and segment count as needed
+    // let sphereMaterial = new THREE.MeshStandardMaterial();
+    // sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    // sphereGeometry.verticesOriginal = sphereGeometry.vertices.map(vertex => vertex.clone());
 
-    previousVertices = sphereGeometry.vertices.map(vertex => vertex.clone());
+    // previousVertices = sphereGeometry.vertices.map(vertex => vertex.clone());
 
-    sphere.receiveShadow = true;
-    sphere.castShadow = true;
+    // sphere.receiveShadow = true;
+    // sphere.castShadow = true;
 
-    scene.add(sphere);
+    // scene.add(sphere);
 
 
     //setup window resize
@@ -204,8 +196,8 @@ function render() {
         //console.log("yes");
         // WarpBall(ball, modulate(Math.pow(lowerAvgFr, 0.8), 0, 1, 0, 1), modulate(upperAvgFr, 0, 1, 0, 4));
         // WarpBox(cube, modulate(Math.pow(lowerAvgFr, 0.8), 0, 1, 0, 1), modulate(upperAvgFr, 0, 1, 0, 4));
-        //WarpBox(cube, slicedDataArray)
-        WarpSphere(sphere, smoothedDataArray)
+        WarpBox(cube, slicedDataArray)
+        //WarpSphere(sphere, smoothedDataArray)
     }
     
  
