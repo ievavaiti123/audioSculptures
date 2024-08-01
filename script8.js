@@ -67,7 +67,7 @@ function setup() {
     camera.add( audioListener );
     const audioLoader = new THREE.AudioLoader();
     audio = new THREE.Audio(audioListener);
-    audioLoader.load('audio/granular-soundscape-2.wav', (buffer) => {
+    audioLoader.load('audio/frozen_soundsculpture.mp3', (buffer) => {
     audio.setBuffer(buffer);
     audio.loop = true;
     });
@@ -120,23 +120,23 @@ function setup() {
 //     //console.log()
 //    scene.add(group);
 
-    // let cubegeometry = new THREE.BoxGeometry(50, 50, 2, 5, 50, 5);
-    // let cubemesh = new THREE.MeshStandardMaterial();
-    // cube = new THREE.Mesh(cubegeometry, cubemesh);
-    // cubegeometry.verticesOriginal = cubegeometry.vertices.map(vertex => vertex.clone());
-    // scene.add(cube);
+    let cubegeometry = new THREE.BoxGeometry(50, 50, 2, 5, 50, 5);
+    let cubemesh = new THREE.MeshStandardMaterial();
+    cube = new THREE.Mesh(cubegeometry, cubemesh);
+    cubegeometry.verticesOriginal = cubegeometry.vertices.map(vertex => vertex.clone());
+    scene.add(cube);
 
-    let sphereGeometry = new THREE.SphereGeometry(25, 70, 200); // Adjust the radius and segment count as needed
-    let sphereMaterial = new THREE.MeshStandardMaterial();
-    sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-    sphereGeometry.verticesOriginal = sphereGeometry.vertices.map(vertex => vertex.clone());
+    // let sphereGeometry = new THREE.SphereGeometry(25, 70, 200); // Adjust the radius and segment count as needed
+    // let sphereMaterial = new THREE.MeshStandardMaterial();
+    // sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    // sphereGeometry.verticesOriginal = sphereGeometry.vertices.map(vertex => vertex.clone());
 
-    previousVertices = sphereGeometry.vertices.map(vertex => vertex.clone());
+    // previousVertices = sphereGeometry.vertices.map(vertex => vertex.clone());
 
-    sphere.receiveShadow = true;
-    sphere.castShadow = true;
+    // sphere.receiveShadow = true;
+    // sphere.castShadow = true;
 
-    scene.add(sphere);
+    // scene.add(sphere);
 
 
     //setup window resize
@@ -204,8 +204,8 @@ function render() {
         //console.log("yes");
         // WarpBall(ball, modulate(Math.pow(lowerAvgFr, 0.8), 0, 1, 0, 1), modulate(upperAvgFr, 0, 1, 0, 4));
         // WarpBox(cube, modulate(Math.pow(lowerAvgFr, 0.8), 0, 1, 0, 1), modulate(upperAvgFr, 0, 1, 0, 4));
-        //WarpBox(cube, slicedDataArray)
-        WarpSphere(sphere, smoothedDataArray)
+        WarpBox(cube, slicedDataArray)
+        //WarpSphere(sphere, smoothedDataArray)
     }
     
  
@@ -277,7 +277,7 @@ function WarpSphere(mesh_, audioData) {
 function WarpBox(mesh_, audioData) {
     mesh_.geometry.vertices.forEach(function (vertex, i) {
         let originalVertex = mesh_.geometry.verticesOriginal[i]; 
-        if (vertex.z > 0) { 
+        // if (vertex.z > 0) { 
             // Normalize the frequency data to a value between 0 and 1
             let frequencyValue = audioData[i % audioData.length] / 511.0;
 
@@ -286,7 +286,7 @@ function WarpBox(mesh_, audioData) {
             // Apply the displacement to the z coordinate directly
             vertex.copy(originalVertex);
             vertex.z += amplifiedValue;
-        }
+        //}
     });
     //averageVertices(mesh_);
 
