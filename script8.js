@@ -67,7 +67,7 @@ function setup() {
     camera.add( audioListener );
     const audioLoader = new THREE.AudioLoader();
     audio = new THREE.Audio(audioListener);
-    audioLoader.load('audio/granular-soundscape-2.wav', (buffer) => {
+    audioLoader.load('audio/frozen_soundsculpture.mp3', (buffer) => {
     audio.setBuffer(buffer);
     audio.loop = true;
     });
@@ -269,7 +269,7 @@ function WarpSphere(mesh_, audioData) {
 function WarpBox(mesh_, audioData) {
     mesh_.geometry.vertices.forEach(function (vertex, i) {
         let originalVertex = mesh_.geometry.verticesOriginal[i]; 
-        if (vertex.z > 0) { 
+        // if (vertex.z > 0) { 
             // Normalize the frequency data to a value between 0 and 1
             let frequencyValue = audioData[i % audioData.length] / 511.0;
 
@@ -278,7 +278,7 @@ function WarpBox(mesh_, audioData) {
             // Apply the displacement to the z coordinate directly
             vertex.copy(originalVertex);
             vertex.z += amplifiedValue;
-        }
+        //}
     });
     //averageVertices(mesh_);
 
