@@ -20,7 +20,7 @@ const amplificationFactor = 15;
 
 const fftSize = 1024;
 
-const minFrequency = 3000;
+const minFrequency = 400;
 const maxFrequency = 10000;
 
 let startIndex, endIndex;
@@ -67,7 +67,7 @@ function setup() {
     camera.add( audioListener );
     const audioLoader = new THREE.AudioLoader();
     audio = new THREE.Audio(audioListener);
-    audioLoader.load('audio/frozen_soundsculpture.mp3', (buffer) => {
+    audioLoader.load('audio/sample_3.wav', (buffer) => {
     audio.setBuffer(buffer);
     audio.loop = true;
     });
@@ -112,7 +112,7 @@ function setup() {
 
     //setup shape   
 
-    let cubegeometry = new THREE.BoxGeometry(50, 50, 2, 5, 50, 5);
+    let cubegeometry = new THREE.BoxGeometry(50, 50, 3, 5, 50, 5);
     let cubemesh = new THREE.MeshStandardMaterial();
     cube = new THREE.Mesh(cubegeometry, cubemesh);
     cubegeometry.verticesOriginal = cubegeometry.vertices.map(vertex => vertex.clone());
