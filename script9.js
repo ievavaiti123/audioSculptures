@@ -21,11 +21,10 @@ const maxFrequency = 3000;
 let startIndex, endIndex;
 
 //gui settings
-let datGui, params;
+let params;
 
 //shape settings
-let sphere, cube, previousVertices;
-
+let cube;
 let cubeSize = [400, 400, 10];
 let cubeSegments = [5, 50, 5];
 
@@ -99,20 +98,6 @@ function setup() {
     cubegeometry.verticesOriginal = cubegeometry.vertices.map(vertex => vertex.clone());
     scene.add(cube);
 
-    //apply visualisation to a spherical shape
-    // let sphereGeometry = new THREE.SphereGeometry(25, 70, 200); // Adjust the radius and segment count as needed
-    // let sphereMaterial = new THREE.MeshStandardMaterial();
-    // sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-    // sphereGeometry.verticesOriginal = sphereGeometry.vertices.map(vertex => vertex.clone());
-
-    // previousVertices = sphereGeometry.vertices.map(vertex => vertex.clone());
-
-    // sphere.receiveShadow = true;
-    // sphere.castShadow = true;
-
-    // scene.add(sphere);
-
-
     //setup window resize
     window.addEventListener('resize', () => {
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -160,8 +145,6 @@ function gui() {
     
 }
 
-
-
 function render() {
     //renderer animates the shape and updates the analysed audio frequencies. 
 
@@ -178,9 +161,9 @@ function render() {
 
     if (audio.isPlaying) {
         //visualising on a 'plane'
-        //WarpBox(cube, slicedDataArray)
+        WarpBox(cube, slicedDataArray)
         //visualising on a spehere
-        WarpSphere(sphere, smoothedDataArray)
+     
     }
     
  
@@ -206,157 +189,34 @@ function updateGeometry() {
     scene.add(cube);
 }
 
-
-
-function WarpSphere(mesh_, audioData) {
-    //apply audio analysis to a spherical shape
-
-    const numVertices = mesh_.geometry.vertices.length;
-    const smoothingFactor = 0.5; 
-
-    let stepSize = 5
-    // Step 1: Affect every 5th vertex
-    for (let i = 0; i < numVertices; i += stepSize) {
-        let originalVertex = mesh_.geometry.verticesOriginal[i];
-        
-        // Normalize the frequency data to a value between 0 and 1
-        let frequencyValue = audioData[(i / stepSize) % audioData.length] / fftSize;
-        let amplifiedValue = frequencyValue * amplificationFactor;
-
-        // Calculate the normal direction and apply the displacement
-        let normal = originalVertex.clone().normalize();
-        let displacement = normal.multiplyScalar(amplifiedValue);
-
-        // Update the vertex position
-        mesh_.geometry.vertices[i].copy(originalVertex).add(displacement);
-        previousVertices[i].copy(mesh_.geometry.vertices[i]);
-    }
-
-    // Step 2: Smooth the vertices between the affected ones
-    for (let i = 0; i < numVertices; i++) {
-        if (i % stepSize !== 0) {
-            let leftIndex = Math.floor(i / stepSize) * stepSize;
-            let rightIndex = Math.min(leftIndex + stepSize, numVertices - 1);
-
-            let leftVertex = previousVertices[leftIndex];
-            let rightVertex = previousVertices[rightIndex];
-
-            // Interpolate between the left and right affected vertices
-            let t = (i % stepSize) / stepSize;
-            let interpolatedVertex = leftVertex.clone().lerp(rightVertex, t);
-
-            mesh_.geometry.vertices[i].lerp(interpolatedVertex, smoothingFactor);
-        }
-    }
-    mesh_.geometry.verticesNeedUpdate = true;
-}
-
-
 function WarpBox(mesh_, audioData) {
     mesh_.geometry.vertices.forEach(function (vertex, i) {
         let originalVertex = mesh_.geometry.verticesOriginal[i]; 
+        //have the visualisation on both sides rather than one
         // if (vertex.z > 0) { 
-            // Normalize the frequency data to a value between 0 and 1
-            let frequencyValue = audioData[i % audioData.length] / 511.0;
-
+            // Normalize the frequency data
+            let frequencyValue = audioData[i % audioData.length] / fftSize;
             let amplifiedValue = frequencyValue * amplificationFactor;
-
             // Apply the displacement to the z coordinate directly
             vertex.copy(originalVertex);
             vertex.z += amplifiedValue;
         //}
     });
-    //averageVertices(mesh_);
 
-    // Notify Three.js of the updated vertices and normals
+    // updated vertices and normals
     mesh_.geometry.verticesNeedUpdate = true;
     mesh_.geometry.normalsNeedUpdate = true;
     mesh_.geometry.computeVertexNormals();
     mesh_.geometry.computeFaceNormals();
 }
 
-function map(value, inMin, inMax, outMin, outMax) {
-    return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
-}
-
-function averageVertices(mesh) {
-    let vertices = mesh.geometry.vertices;
-    let verticesCopy = vertices.map(vertex => vertex.clone());
-    
-    for (let i = 0; i < vertices.length; i++) {
-        let vertex = verticesCopy[i];
-        let neighborIndices = getNeighborIndices(mesh, i);
-        
-        //let avgX = vertex.x;
-        //let avgY = vertex.y;
-        let avgZ = vertex.z;
-        
-        neighborIndices.forEach(index => {
-            //avgX += verticesCopy[index].x;
-            //avgY += verticesCopy[index].y;
-            avgZ += verticesCopy[index].z;
-        });
-        
-        let numNeighbors = neighborIndices.length + 1;
-        //vertices[i].x = avgX / numNeighbors;
-        //vertices[i].y = avgY / numNeighbors;
-        vertices[i].z = avgZ / numNeighbors;
-    }
-    
-    // Notify of the updated vertices and normals
-    mesh.geometry.verticesNeedUpdate = true;
-    mesh.geometry.normalsNeedUpdate = true;
-    mesh.geometry.computeVertexNormals();
-    mesh.geometry.computeFaceNormals();
-}
-
-
-
-function getNeighborIndices(mesh, vertexIndex) {
-    let neighbors = new Set();
-    let faces = mesh.geometry.faces;
-
-    faces.forEach(face => {
-        if (face.a === vertexIndex || face.b === vertexIndex || face.c === vertexIndex) {
-            neighbors.add(face.a);
-            neighbors.add(face.b);
-            neighbors.add(face.c);
-        }
-    });
-
-    neighbors.delete(vertexIndex); // Remove the vertex itself
-    return Array.from(neighbors);
-}
-
-//helper functions
-function fractionate(val, minVal, maxVal) {
-    return (val - minVal) / (maxVal - minVal);
-}
-
-function modulate(val, minVal, maxVal, outMin, outMax) {
-    let fr = fractionate(val, minVal, maxVal);
-    let delta = outMax - outMin;
-    return outMin + (fr * delta);
-}
-
-function avg(arr) {
-    let total = arr.reduce(function (sum, b) { return sum + b; });
-    return (total / arr.length);
-}
-
-function max(arr) {
-    return arr.reduce(function (a, b) { return Math.max(a, b); })
-}
-
 function downloadFile(filename, content) {
+    //function for downloading the file
     const blob = new Blob([content], { type: 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
-    
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
-    
-    // Trigger a click event to initiate the download
     const event = new MouseEvent('click', {
       view: window,
       bubbles: true,
@@ -364,7 +224,6 @@ function downloadFile(filename, content) {
     });
     
     a.dispatchEvent(event);
-    
-    // Clean up resources
+
     URL.revokeObjectURL(url);
   }
